@@ -59,12 +59,16 @@ pip install -e ".[dev]"
 ## Usage
 
 ```bash
+scopeguard doctor
 scopeguard scope init
-# edit scope.yaml — add your SSID and target ranges, set an expiry date
+nano scope.yaml
+scopeguard scope check
 
-scopeguard wifi scan
-scopeguard net scan
-scopeguard report
+scopeguard wifi scan --save wifi.json
+scopeguard net scan 192.168.1.0/24 --ports quick --save net.json
+
+scopeguard report --wifi wifi.json --net net.json -o report.html
+scopeguard serve
 ```
 
 ## License
