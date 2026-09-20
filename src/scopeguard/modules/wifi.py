@@ -50,7 +50,7 @@ def scan_in_scope(iface: str | None, scope: Scope) -> list[dict]:
     for ap in aps:
         try:
             scope.assert_wifi(ap.get("ssid"), ap.get("bssid"))
-        except Exception:
+        except Exception:  # noqa: BLE001, S112
             continue
         ap["findings"] = classify(ap)
         in_scope.append(ap)

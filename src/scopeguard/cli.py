@@ -65,7 +65,7 @@ def doctor() -> None:
             elif sys.platform.startswith("linux"):
                 detail += " (install: sudo apt install iw)"
         tbl.add_row("WiFi backend", status, detail)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         tbl.add_row("WiFi backend", "[red]fail[/]", str(e))
 
     tbl.add_row("Network scanner", "[green]ok[/]", "pure sockets (all platforms)")

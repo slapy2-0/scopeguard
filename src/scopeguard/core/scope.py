@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import ipaddress
-from datetime import date
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 import yaml
@@ -23,11 +23,10 @@ class ScopeTarget(BaseModel):
     cidr: str | None = None
 
     def matches_wifi(self, ssid: str | None, bssid: str | None) -> bool:
-        if self.ssid and ssid and self.ssid.lower() == ssid.lower():
-            return True
-        if self.bssid and bssid and self.bssid.lower() == bssid.lower():
-            return True
-        return False
+        return bool(
+    (self.ssid and ssid and self.ssid.lower() == ssid.lower())
+    or (self.bssid and bssid and self.bssid.lower() == bssid.lower())
+)
             
     def matches_host(self, host: str) -> bool:
                     if self.host is not None and self.host.lower() == host.lower():
@@ -51,12 +50,12 @@ class Scope(BaseModel):
     @field_validator("valid_until")
     @classmethod
     def _not_too_far(cls, v: date) -> date:
-        if (v - date.today()).days > 365:
+        if (v - datetime.now(UTC).date()).days > 365:
             raise ValueError("valid_until cannot be more than 1 year out")
         return v
 
     def is_expired(self) -> bool:
-        return date.today() > self.valid_until
+        return datetime.now(UTC).date() > self.valid_until
 
     def assert_valid(self) -> None:
         if self.is_expired():

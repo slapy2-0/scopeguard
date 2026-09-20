@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -7,12 +7,12 @@ from scopeguard.core.scope import Scope, ScopeTarget
 
 
 def _scope(**kw):
-    base = dict(
-        owner="me",
-        authorized_by="me",
-        valid_until=date.today() + timedelta(days=30),
-        targets=[ScopeTarget(ssid="HomeLab", bssid="aa:bb:cc:dd:ee:ff", host="192.168.1.10")],
-    )
+    base = {
+        "owner": "me",
+        "authorized_by": "me",
+        "valid_until": datetime.now(UTC).date() + timedelta(days=30),
+        "targets": [ScopeTarget(ssid="HomeLab", bssid="aa:bb:cc:dd:ee:ff", host="192.168.1.10")],
+    }
     base.update(kw)
     return Scope(**base)
 
@@ -27,7 +27,7 @@ def test_out_of_scope_ssid_raises():
 
 
 def test_expired_scope_raises():
-    s = _scope(valid_until=date.today() - timedelta(days=1))
+    s = _scope(valid_until=datetime.now(UTC).date() - timedelta(days=1))
     with pytest.raises(ScopeExpiredError):
         s.assert_valid()
 
