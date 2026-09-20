@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ScopeGuard Report — {{ r.scope.owner }}</title>
+<style>
+  :root {
+    --bg: #0f1116; --panel: #171a22; --border: #262b36;
+    --fg: #e6e8ee; --muted: #8a93a6; --accent: #4cc2ff;
+    --ok: #4ade80; --warn: #fbbf24; --bad: #f87171;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 32px; background: var(--bg); color: var(--fg);
+    font: 14px/1.5 ui-monospace, "Cascadia Code", Consolas, monospace;
+  }
+  h1, h2 { font-weight: 600; letter-spacing: -0.01em; }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  h2 { margin: 32px 0 12px; font-size: 16px; color: var(--accent); }
+  .sub { color: var(--muted); margin-bottom: 24px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+  .card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px 16px;
+  }
+  .card .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .card .value { font-size: 22px; margin-top: 4px; }
+  table { width: 100%; border-collapse: collapse; background: var(--panel);
+          border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: #1d2230; color: var(--muted); font-weight: 500; font-size: 12px;
+       text-transform: uppercase; letter-spacing: 0.05em; }
+  tr:last-child td { border-bottom: 0; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 999px;
+          font-size: 12px; border: 1px solid var(--border); }
+  .pill.ok { color: var(--ok); border-color: #1e4d33; background: #10261a; }
+  .pill.warn { color: var(--warn); border-color: #4d3d12; background: #2a2008; }
+  .pill.bad { color: var(--bad); border-color: #4d1f1f; background: #2a1010; }
+  .muted { color: var(--muted); }
+  footer { margin-top: 40px; color: var(--muted); font-size: 12px; border-top: 1px solid var(--border); padding-top: 16px; }
+  code { background: #1d2230; padding: 1px 6px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<h1>ScopeGuard Report</h1>
+<div class="sub">
+  Owner: <strong>{{ r.scope.owner }}</strong>
+  &middot; Authorized by: <strong>{{ r.scope.authorized_by }}</strong>
+  &middot; Scope valid until <strong>{{ r.scope.valid_until }}</strong>
+  &middot; Generated {{ r.meta.generated_at }}
+</div>
+
+<h2>Summary</h2>
+<div class="grid">
+  <div class="card"><div class="label">WiFi APs</div><div class="value">{{ r.summary.wifi_aps }}</div></div>
+  <div class="card"><div class="label">WiFi Findings</div><div class="value">{{ r.summary.wifi_findings }}</div></div>
+  <div class="card"><div class="label">Live Hosts</div><div class="value">{{ r.summary.net_hosts }}</div></div>
+  <div class="card"><div class="label">Open Ports</div><div class="value">{{ r.summary.net_open_ports }}</div></div>
+</div>
+
+<h2>Authorized Scope</h2>
+<table>
+  <thead><tr><th>SSID</th><th>BSSID</th><th>Host</th><th>CIDR</th></tr></thead>
+  <tbody>
+  {% for t in r.scope.targets %}
+    <tr>
+      <td>{{ t.ssid or "-" }}</td>
+      <td>{{ t.bssid or "-" }}</td>
+      <td>{{ t.host or "-" }}</td>
+      <td>{{ t.cidr or "-" }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="4" class="muted">No targets.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h2>WiFi Access Points
+  {% if r.wifi.scanned_at %}<span class="muted" style="font-size:12px;font-weight:400">
+    &middot; {{ r.wifi.backend or "-" }}{% if r.wifi.interface %} on {{ r.wifi.interface }}{% endif %}
+    &middot; {{ r.wifi.scanned_at }}</span>{% endif %}
+</h2>
+<table>
+  <thead><tr><th>SSID</th><th>BSSID</th><th>CH</th><th>Signal</th><th>Enc</th><th>Findings</th></tr></thead>
+  <tbody>
+  {% for ap in r.wifi.access_points %}
+    <tr>
+      <td>{{ ap.ssid or "<hidden>" }}</td>
+      <td>{{ ap.bssid or "-" }}</td>
+      <td>{{ ap.channel or "-" }}</td>
+      <td>
+        {%- if ap.signal_dbm is not none %}{{ ap.signal_dbm }} dBm
+        {%- elif ap.signal_pct is not none %}{{ ap.signal_pct }}%
+        {%- else %}-{% endif -%}
+      </td>
+      <td>
+        {%- if ap.privacy is false -%}<span class="pill bad">OPEN</span>
+        {%- elif ap.rsn -%}<span class="pill ok">WPA2/3</span>
+        {%- elif ap.wpa -%}<span class="pill warn">WPA/Legacy</span>
+        {%- else -%}<span class="pill warn">Unknown</span>{%- endif -%}
+      </td>
+      <td>
+        {% if ap.findings %}
+          {% for f in ap.findings %}<div><span class="pill warn">{{ f }}</span></div>{% endfor %}
+        {% else %}<span class="muted">-</span>{% endif %}
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="muted">No WiFi data (run `scopeguard wifi scan --save wifi.json`).</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h2>Network Hosts
+  {% if r.net.scanned_at %}<span class="muted" style="font-size:12px;font-weight:400">
+    &middot; {{ r.net.cidr }} &middot; ports {{ r.net.ports_spec }}
+    &middot; {{ r.net.scanned_at }}</span>{% endif %}
+</h2>
+<table>
+  <thead><tr><th>Host</th><th>Port</th><th>Service</th><th>Banner</th></tr></thead>
+  <tbody>
+  {% for host in r.net.hosts %}
+    {% for p in host.open_ports %}
+    <tr>
+      <td>{% if loop.first %}{{ host.ip }}{% endif %}</td>
+      <td>{{ p.port }}</td>
+      <td>{{ p.service or "-" }}</td>
+      <td class="muted">{{ (p.banner[:80] ~ "...") if p.banner and p.banner|length > 80 else (p.banner or "-") }}</td>
+    </tr>
+    {% endfor %}
+  {% else %}
+    <tr><td colspan="4" class="muted">No network data (run `scopeguard net scan ... --save net.json`).</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<footer>
+  Generated by <code>scopeguard {{ r.meta.scopeguard_version }}</code>
+  on <code>{{ r.meta.host_os }}</code>, Python <code>{{ r.meta.python }}</code>.
+  <br>
+  This report was produced under the scope listed above. Only authorized targets were scanned.
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,10 @@
+# ScopeGuard example scope file.
+# Copy to scope.yaml and edit. Only list targets you own or have written permission to test.
+owner: "Your Name or Org"
+authorized_by: "Yourself / Client Name"
+valid_until: "2026-12-31"
+notes: "Internal lab + home network audit"
+targets:
+  - ssid: "HomeLab"
+    bssid: "aa:bb:cc:dd:ee:ff"
+  - cidr: "192.168.1.0/24"
